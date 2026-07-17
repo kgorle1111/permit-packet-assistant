@@ -1,0 +1,44 @@
+{
+  "_note": "kn: demo mappings. At pilot, each agency block is rebuilt from the real county/state/federal forms with the consultant — this file is the ONLY thing that changes per jurisdiction. Keys are the agency form's field labels; values are canonical record field names.",
+  "county_building": {
+    "title": "County Building Department — Marine Structure Application (draft)",
+    "fields": {
+      "Applicant name": "owner_name",
+      "Project site address": "site_address",
+      "Assessor parcel number (APN)": "parcel_apn",
+      "Description of structure": "structure_type",
+      "Scope of work": "work_type",
+      "Structure length (ft)": "length_ft",
+      "Structure width (ft)": "width_ft",
+      "Existing structures on site": "existing_structures",
+      "Setback information": "setback_notes",
+      "Contractor of record": "contractor_name"
+    }
+  },
+  "state_env": {
+    "title": "State Environmental Agency — Regulated Activity Notice (draft)",
+    "fields": {
+      "Property owner": "owner_name",
+      "Project location": "site_address",
+      "Waterbody name": "waterbody",
+      "Activity type": "work_type",
+      "Structure description": "structure_type",
+      "Dimensions (L x W, ft)": ["length_ft", "width_ft"],
+      "Riparian / shoreline notes": "riparian_notes",
+      "Survey provided": "survey_available"
+    }
+  },
+  "usace_spgp": {
+    "title": "USACE — General Permit Worksheet (draft)",
+    "fields": {
+      "Applicant": "owner_name",
+      "Location of work": "site_address",
+      "Name of waterway": "waterbody",
+      "Description of proposed activity": "structure_type",
+      "New work or maintenance": "work_type",
+      "Dimensions of structure (ft)": ["length_ft", "width_ft"],
+      "Existing structures": "existing_structures",
+      "Photographs available": "photos_available"
+    }
+  }
+}

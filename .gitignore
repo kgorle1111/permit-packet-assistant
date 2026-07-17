@@ -1,0 +1,20 @@
+# secrets
+.env
+
+# client PII — project records, homeowner messages, packets
+projects.jsonl
+messages.jsonl
+receipts.jsonl
+packets/
+evals/results/
+
+# python
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# editor / OS
+.idea/
+.vscode/
+.DS_Store

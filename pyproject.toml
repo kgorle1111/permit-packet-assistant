@@ -1,0 +1,12 @@
+[project]
+name = "permit-packet-assistant"
+version = "0.1.0"
+description = "One intake, every agency — draft permit packets for marine permitting consultants; the software assembles, the consultant files"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+anthropic
+twilio             # optional client SMS; messages persist locally without it
+python-docx        # the deliverable IS a DOCX packet
