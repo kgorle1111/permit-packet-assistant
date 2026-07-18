@@ -15,10 +15,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LOG = ROOT / "projects.jsonl"
 MESSAGES = ROOT / "messages.jsonl"
+DATA = ROOT / "data"                      # per-project JSON snapshots (durable project list)
 
 REQUIRED_DOCS = ["signed survey", "site plan", "photos", "deed or proof of ownership"]
 
 STAGES = ["intake", "assembling", "consultant_review", "submitted", "rai_received", "approved"]
+STAGE_LABELS = {"intake": "Intake", "assembling": "Assembling", "consultant_review": "In review",
+                "submitted": "Submitted", "rai_received": "RAI received", "approved": "Approved"}
 
 # The ONLY client-facing status texts. Consultant-approved wording, filled by
 # str.format with safe fields. No generative path writes to a client.
@@ -36,9 +39,76 @@ REMINDER_TEMPLATE = ("Hi {name}, quick reminder for your permit file — we stil
 _PROJECTS: dict[str, dict] = {}
 
 
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 def _audit(event, **kw):
     with LOG.open("a") as f:
-        f.write(json.dumps({"ts": datetime.now(timezone.utc).isoformat(), "event": event, **kw}) + "\n")
+        f.write(json.dumps({"ts": _now(), "event": event, **kw}) + "\n")
+
+
+def _persist(pid: str) -> None:
+    """Snapshot one project to disk so the list survives a restart. Best-effort;
+    the in-memory copy stays the live source of truth."""
+    p = _PROJECTS.get(pid)
+    if not p:
+        return
+    DATA.mkdir(exist_ok=True)
+    (DATA / f"{pid}.json").write_text(json.dumps(p))
+
+
+def _touch(pid: str) -> None:
+    p = _PROJECTS.get(pid)
+    if p:
+        p["updated"] = _now()
+        _persist(pid)
+
+
+def load_all() -> int:
+    """Rehydrate the in-memory index from data/ on startup. No-op if absent."""
+    if not DATA.exists():
+        return 0
+    n = 0
+    for f in DATA.glob("*.json"):
+        try:
+            p = json.loads(f.read_text())
+            _PROJECTS[p["id"]] = p
+            n += 1
+        except (json.JSONDecodeError, KeyError):
+            continue
+    return n
+
+
+def summarize(p: dict) -> dict:
+    """List-view summary — no intake transcripts or field bodies."""
+    docs = p.get("docs", {})
+    return {
+        "id": p["id"],
+        "consultant_name": p.get("consultant_name", ""),
+        "owner_name": (p.get("fields") or {}).get("owner_name") or "",
+        "site_address": (p.get("fields") or {}).get("site_address") or "",
+        "stage": p.get("stage", "intake"),
+        "created": p.get("created"),
+        "updated": p.get("updated", p.get("created")),
+        "docs_received": sum(1 for v in docs.values() if v),
+        "docs_total": len(docs),
+        "needs_review_count": len(p.get("needs_review", [])),
+        "export_count": len(p.get("exports", [])),
+    }
+
+
+def list_projects() -> list[dict]:
+    return sorted((summarize(p) for p in _PROJECTS.values()),
+                  key=lambda s: s["updated"] or "", reverse=True)
+
+
+def record_packet_export(pid: str) -> dict:
+    p = _PROJECTS[pid]
+    p.setdefault("exports", []).append({"ts": _now()})
+    _audit("packet_exported", project=pid)
+    _touch(pid)
+    return p
 
 
 def safe_name(fields: dict) -> str:
@@ -72,15 +142,17 @@ def _send(project, body):
 
 def create_project(consultant_name: str, owner_phone: str = "") -> dict:
     pid = uuid.uuid4().hex[:10]
+    now = _now()
     _PROJECTS[pid] = {
-        "id": pid, "created": datetime.now(timezone.utc).isoformat(),
+        "id": pid, "created": now, "updated": now,
         "consultant_name": consultant_name, "owner_phone": owner_phone,
         "fields": {}, "needs_review": [], "confidence": {},
         "docs": {d: False for d in REQUIRED_DOCS},
-        "stage": "intake", "stage_history": [("intake", datetime.now(timezone.utc).isoformat())],
-        "intake_log": [],
+        "stage": "intake", "stage_history": [("intake", now)],
+        "intake_log": [], "exports": [],
     }
     _audit("project_created", project=pid)
+    _persist(pid)
     return _PROJECTS[pid]
 
 
@@ -108,6 +180,7 @@ def merge_intake(pid: str, extraction: dict, raw_text: str) -> dict:
     # a homeowner message" has to survive a process restart, not just this dict.
     _audit("intake_merged", project=pid, needs_review=p["needs_review"],
            homeowner_text=raw_text[:20000])
+    _touch(pid)
     return p
 
 
@@ -118,6 +191,7 @@ def resolve_review(pid: str, field: str, value) -> dict:
     if field in p["needs_review"]:
         p["needs_review"].remove(field)
     _audit("review_resolved", project=pid, field=field)
+    _touch(pid)
     return p
 
 
@@ -127,6 +201,7 @@ def set_doc(pid: str, doc: str, received: bool) -> dict:
         raise ValueError(f"unknown doc '{doc}'")
     p["docs"][doc] = received
     _audit("doc_updated", project=pid, doc=doc, received=received)
+    _touch(pid)
     return p
 
 
@@ -153,6 +228,7 @@ def set_stage(pid: str, stage: str) -> dict:
     _send(p, STATUS_TEMPLATES[stage].format(name=safe_name(p["fields"]),
                                             consultant=p["consultant_name"]))
     _audit("stage_set", project=pid, stage=stage)
+    _touch(pid)
     return p
 
 
@@ -160,8 +236,10 @@ if __name__ == "__main__":
     import tempfile
     LOG = Path(tempfile.mkstemp(suffix=".jsonl")[1])
     MESSAGES = Path(tempfile.mkstemp(suffix=".jsonl")[1])
+    DATA = Path(tempfile.mkdtemp()) / "data"
 
     p = create_project("Kannishk", "+18315550100")
+    assert (DATA / f"{p['id']}.json").exists()  # persisted on create
     merge_intake(p["id"], {"fields": {"owner_name": "Pat", "length_ft": 40.0},
                            "needs_review": ["parcel_apn"], "confidence": {}, "reply_text": "ok"}, "my dock is 40ft")
     merge_intake(p["id"], {"fields": {"owner_name": "OVERWRITE ATTEMPT", "width_ft": 8.0},
@@ -180,4 +258,13 @@ if __name__ == "__main__":
         raise AssertionError("accepted unknown stage")
     except ValueError:
         pass
-    print("store OK — first capture wins, flags clear only via consultant, messages templated only")
+
+    s = summarize(p)
+    assert s["owner_name"] == "Pat" and s["stage"] == "assembling" and s["docs_received"] == 1
+    record_packet_export(p["id"])
+    assert summarize(p)["export_count"] == 1
+    _PROJECTS.clear()
+    assert load_all() == 1
+    assert get_project(p["id"])["fields"]["owner_name"] == "Pat"
+    assert list_projects()[0]["owner_name"] == "Pat"
+    print("store OK — capture/flags/templated-messages hold, persistence + list + export history work")

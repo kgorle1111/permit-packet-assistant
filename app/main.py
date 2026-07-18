@@ -20,16 +20,28 @@ Trust boundaries
       message is never dropped.
 """
 import os
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app import intake, packet, receipt, store
 
 load_dotenv()
-app = FastAPI(title="permit-packet-assistant")
+
+STATIC = Path(__file__).resolve().parent / "static"
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    store.load_all()  # rehydrate persisted projects so the list survives a restart
+    yield
+
+
+app = FastAPI(title="permit-packet-assistant", lifespan=lifespan)
 
 
 def _consultant_only(token: str | None):
@@ -71,6 +83,12 @@ def health():
 @app.get("/rollup")
 def rollup():
     return receipt.rollup()
+
+
+@app.get("/projects")
+def list_projects():
+    """Project list for the home view — summaries, newest activity first."""
+    return store.list_projects()
 
 
 @app.post("/projects")
@@ -200,44 +218,11 @@ def export_packet(pid: str):
     path = packet.build_packet(p)
     stats = packet.packet_stats(p)
     receipt.log_event(pid, "packet_exported", **stats)
+    store.record_packet_export(pid)
     return FileResponse(path, filename=path.name,
                         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
 
-# kn: minimal demo page — intake box, flags, checklist, stage buttons, export.
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 def index():
-    return """<!doctype html><html><head><meta charset="utf-8"><title>Permit Packet Assistant</title>
-<style>body{font-family:system-ui;max-width:760px;margin:2rem auto;padding:0 1rem;color:#1a202c}
-input,textarea,button,select{font:inherit;margin:.2rem 0}.flag{color:#b45309;font-weight:600}
-.box{border:1px solid #ddd;border-radius:8px;padding:1rem;margin:.6rem 0}</style></head><body>
-<h1>Permit Packet Assistant</h1>
-<p>One intake, every agency. The software assembles drafts; the consultant reviews and files.</p>
-<div class="box"><input id="cn" placeholder="Consultant name" value="Kannishk">
-<input id="ph" placeholder="Homeowner phone (optional)"><button onclick="mk()">Create project</button></div>
-<div id="proj"></div>
-<script>
-let PID=null;
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-async function mk(){const r=await fetch('/projects',{method:'POST',headers:{'Content-Type':'application/json'},
- body:JSON.stringify({consultant_name:document.getElementById('cn').value,owner_phone:document.getElementById('ph').value})});
- const j=await r.json();PID=j.id;render(j,'');}
-async function refresh(reply){render(await (await fetch('/projects/'+PID)).json(),reply||'');}
-async function talk(){const t=document.getElementById('t').value;
- const r=await fetch(`/projects/${PID}/intake`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
- const j=await r.json();refresh(j.reply_text);}
-async function stage(s){await fetch(`/projects/${PID}/stage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({stage:s})});refresh('');}
-function render(p,reply){
- let h=`<div class="box"><h2>Project ${p.id} — stage: ${esc(p.stage)}</h2>
- <textarea id="t" rows="3" cols="70" placeholder="Paste the homeowner's message…"></textarea><br>
- <button onclick="talk()">Run intake</button> ${reply?`<p><i>Reply to homeowner:</i> ${esc(reply)}</p>`:''}
- <h3>Record</h3><ul>`;
- for(const[k,v]of Object.entries(p.fields)){h+=`<li>${esc(k)}: <b>${esc(v)}</b>${p.needs_review.includes(k)?' <span class="flag">REVIEW</span>':''}</li>`}
- h+=`</ul><h3>Docs</h3><ul>`;
- for(const[d,got]of Object.entries(p.docs)){h+=`<li>${got?'✅':'⬜'} ${esc(d)}</li>`}
- h+=`</ul><button onclick="fetch('/projects/'+PID+'/remind',{method:'POST'}).then(()=>refresh(''))">Send doc reminder</button>
- <h3>Stage</h3>`+['intake','assembling','consultant_review','submitted','rai_received','approved']
- .map(s=>`<button onclick="stage('${s}')">${s}</button>`).join(' ')+
- `<p><a href="/projects/${p.id}/packet.docx">Export draft packet (DOCX)</a> · <a href="/rollup">rollup</a></p></div>`;
- document.getElementById('proj').innerHTML=h;}
-</script></body></html>"""
+    return FileResponse(STATIC / "index.html", headers={"Cache-Control": "no-cache"})

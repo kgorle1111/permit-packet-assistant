@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Permit Packet Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF8F4; --surface:#FFFFFF; --surface-2:#F3EFE8; --surface-3:#EDE8DF;
+  --ink:#211E1A; --ink-2:#635E55; --ink-3:#9A9488;
+  --line:#E7E2D8; --line-2:#D8D2C6;
+  --accent:#33574E; --accent-hover:#2A4A42; --accent-soft:#E7EEEB; --on-accent:#FFFFFF;
+  --flag:#8A5A1F; --flag-soft:#F5EBDA; --flag-line:#E3D3B4;
+  --ok:#3E6B4F; --ok-soft:#E7F0E9; --ok-line:#CBE0D0;
+  --danger:#9E3B2E; --danger-soft:#F4E5E1;
+  --ring:rgba(51,87,78,.30);
+  --shadow-sm:0 1px 2px rgba(33,30,26,.05);
+  --shadow:0 1px 2px rgba(33,30,26,.05), 0 10px 30px -18px rgba(33,30,26,.28);
+  --shadow-lg:0 24px 60px -24px rgba(33,30,26,.40);
+  --r-sm:8px; --r:12px; --r-lg:18px;
+  --sans:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --serif:'Spectral',Georgia,'Times New Roman',serif;
+}
+:root[data-theme="dark"]{
+  --paper:#16150F; --surface:#201E19; --surface-2:#26231D; --surface-3:#2E2A22;
+  --ink:#F1ECE1; --ink-2:#ADA695; --ink-3:#7C766A;
+  --line:#332F27; --line-2:#413B31;
+  --accent:#7FB1A2; --accent-hover:#93BEB0; --accent-soft:#22302B; --on-accent:#10201C;
+  --flag:#D8A863; --flag-soft:#2C2618; --flag-line:#463A22;
+  --ok:#8FC0A0; --ok-soft:#1E2A21; --ok-line:#31432F;
+  --danger:#DE9083; --danger-soft:#2E1E1A;
+  --ring:rgba(127,177,162,.35);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.6);
+  --shadow-lg:0 28px 70px -24px rgba(0,0,0,.7);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#16150F; --surface:#201E19; --surface-2:#26231D; --surface-3:#2E2A22;
+  --ink:#F1ECE1; --ink-2:#ADA695; --ink-3:#7C766A; --line:#332F27; --line-2:#413B31;
+  --accent:#7FB1A2; --accent-hover:#93BEB0; --accent-soft:#22302B; --on-accent:#10201C;
+  --flag:#D8A863; --flag-soft:#2C2618; --flag-line:#463A22; --ok:#8FC0A0; --ok-soft:#1E2A21; --ok-line:#31432F;
+  --danger:#DE9083; --danger-soft:#2E1E1A; --ring:rgba(127,177,162,.35);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3); --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.6); --shadow-lg:0 28px 70px -24px rgba(0,0,0,.7);
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--serif); font-weight:600; letter-spacing:-.01em; margin:0}
+button{font:inherit; cursor:pointer}
+input,textarea,select{font:inherit; color:var(--ink)}
+a{color:var(--accent); text-decoration:none} a:hover{text-decoration:underline}
+.num{font-variant-numeric:tabular-nums}
+:focus-visible{outline:none; box-shadow:0 0 0 3px var(--ring); border-radius:6px}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+
+.topbar{position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:16px; padding:14px clamp(16px,4vw,40px); background:color-mix(in srgb, var(--paper) 84%, transparent); backdrop-filter:saturate(1.4) blur(10px); border-bottom:1px solid var(--line)}
+.brand{display:flex; align-items:center; gap:11px; min-width:0; cursor:pointer}
+.brand .mark{width:34px; height:34px; flex:none; border-radius:9px; background:linear-gradient(155deg,var(--accent),var(--accent-hover)); display:grid; place-items:center; color:var(--on-accent); box-shadow:var(--shadow-sm)}
+.brand .mark svg{width:19px; height:19px}
+.brand .name{font-family:var(--serif); font-size:19px; font-weight:600; line-height:1.1; white-space:nowrap}
+.brand .sub{font-size:11.5px; color:var(--ink-3); letter-spacing:.02em}
+.topbar .spacer{flex:1}
+@media (max-width:640px){.topbar{gap:10px; padding:12px 16px} .brand .sub{display:none} .brand .name{font-size:16px} #exportBtn .lbl{display:none} #exportBtn{padding:0 11px}}
+.iconbtn{width:38px; height:38px; display:grid; place-items:center; border:1px solid var(--line-2); background:var(--surface); color:var(--ink-2); border-radius:10px; transition:background .18s,color .18s,border-color .18s}
+.iconbtn:hover{background:var(--surface-2); color:var(--ink); border-color:var(--ink-3)}
+.iconbtn svg{width:18px; height:18px}
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; height:42px; padding:0 18px; border-radius:10px; border:1px solid transparent; font-weight:600; font-size:14px; white-space:nowrap; transition:background .18s,color .18s,border-color .18s,box-shadow .18s,transform .06s}
+.btn:active{transform:translateY(1px)}
+.btn svg{width:17px; height:17px}
+.btn.primary{background:var(--accent); color:var(--on-accent); box-shadow:var(--shadow-sm)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.ghost{background:var(--surface); color:var(--ink); border-color:var(--line-2)}
+.btn.ghost:hover{background:var(--surface-2); border-color:var(--ink-3)}
+.btn.subtle{background:var(--surface-2); color:var(--ink); border-color:transparent}
+.btn.subtle:hover{background:var(--surface-3)}
+.btn[disabled]{opacity:.45; pointer-events:none}
+.btn.sm{height:36px; padding:0 14px; font-size:13.5px}
+
+.wrap{max-width:1180px; margin:0 auto; padding:clamp(20px,3vw,36px) clamp(16px,4vw,40px) 80px}
+.input{width:100%; height:44px; padding:0 14px; background:var(--surface); border:1px solid var(--line-2); border-radius:10px; transition:border-color .18s,box-shadow .18s}
+.input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring)}
+textarea.input{height:auto; padding:11px 14px; resize:vertical; min-height:44px}
+.field{margin-bottom:14px}
+.field label{display:block; font-size:12.5px; font-weight:600; color:var(--ink-2); margin-bottom:6px}
+
+.chip{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:4px 9px; border-radius:999px; white-space:nowrap; flex:none}
+.chip svg{width:12px; height:12px}
+.chip.flag{background:var(--flag-soft); color:var(--flag); border:1px solid var(--flag-line)}
+.chip.ok{background:var(--ok-soft); color:var(--ok); border:1px solid var(--ok-line)}
+.chip.neutral{background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line-2)}
+.chip.active{background:var(--accent-soft); color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+.chip.sdot::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor}
+
+.page-head{display:flex; align-items:center; gap:16px; margin-bottom:22px; flex-wrap:wrap}
+.page-head h1{font-size:27px} .page-head .spacer{flex:1}
+.dash{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px}
+@media (max-width:760px){.dash{grid-template-columns:repeat(2,1fr)}}
+.dcard{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow-sm); padding:16px 18px}
+.dcard .v{font-size:27px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.02em; line-height:1.05}
+.dcard .v.money{color:var(--ok)}
+.dcard .k{font-size:12.5px; color:var(--ink-3); margin-top:3px}
+.toolbar{display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap}
+.search{position:relative; flex:1; min-width:180px}
+.search svg{position:absolute; left:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--ink-3)}
+.search .input{padding-left:38px; height:42px}
+.seg{display:inline-flex; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px}
+.seg button{border:none; background:transparent; color:var(--ink-2); font-size:13px; font-weight:600; padding:6px 13px; border-radius:8px; transition:background .15s,color .15s}
+.seg button.on{background:var(--surface); color:var(--ink); box-shadow:var(--shadow-sm)}
+
+.projects{display:flex; flex-direction:column; gap:10px}
+.prow{display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow-sm); padding:15px 18px; cursor:pointer; transition:border-color .18s,box-shadow .18s,transform .06s; text-align:left; width:100%}
+.prow:hover{border-color:var(--line-2); box-shadow:var(--shadow)}
+.prow:active{transform:translateY(1px)}
+.prow .pi{width:42px; height:42px; flex:none; border-radius:11px; background:var(--surface-2); display:grid; place-items:center; color:var(--accent)}
+.prow .pi svg{width:20px; height:20px}
+.prow .pmain{flex:1; min-width:0}
+.prow .ptitle{font-family:var(--serif); font-size:17px; font-weight:600; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.prow .pmeta{display:flex; align-items:center; gap:8px; margin-top:5px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-3)}
+.prow .prog{display:flex; align-items:center; gap:10px; flex:none}
+@media (max-width:640px){.prow .prog{display:none}}
+.bar{width:120px; height:7px; border-radius:99px; background:var(--surface-3); overflow:hidden}
+.bar > i{display:block; height:100%; background:var(--ok)}
+.prow .chev{color:var(--ink-3); flex:none} .prow .chev svg{width:18px; height:18px}
+.emptybox{border:1px dashed var(--line-2); border-radius:var(--r); background:var(--surface); padding:52px 24px; text-align:center; color:var(--ink-3)}
+.emptybox .ei{width:46px; height:46px; margin:0 auto 12px; border-radius:12px; background:var(--surface-2); display:grid; place-items:center; color:var(--ink-3)}
+.emptybox b{color:var(--ink-2); font-family:var(--serif); font-size:16px; font-weight:500; display:block; margin-bottom:3px}
+
+.scrim{position:fixed; inset:0; z-index:70; background:rgba(20,18,15,.5); backdrop-filter:blur(2px); display:none; place-items:center; padding:20px}
+.scrim.show{display:grid; animation:fade .18s}
+.modal{width:100%; max-width:440px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--shadow-lg); padding:26px; animation:pop .22s cubic-bezier(.2,.9,.3,1)}
+.modal h2{font-size:21px; margin-bottom:4px} .modal .mlede{color:var(--ink-2); font-size:13.5px; margin-bottom:18px}
+.modal .mact{display:flex; gap:10px; margin-top:8px} .modal .mact .btn{flex:1}
+@keyframes pop{from{opacity:0; transform:translateY(10px) scale(.98)}}
+@keyframes fade{from{opacity:0}}
+
+.crumb{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-3); margin-bottom:14px}
+.crumb button{border:none; background:transparent; color:var(--ink-2); font-weight:600; display:inline-flex; align-items:center; gap:5px; padding:4px 2px}
+.crumb button:hover{color:var(--ink)} .crumb svg{width:15px; height:15px}
+.eng-head{display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:22px}
+.eng-head > div:first-child{flex:1 1 320px; min-width:0}
+.eng-head h2{font-size:24px}
+.eng-head .hmeta{display:flex; align-items:center; gap:8px; margin-top:7px; flex-wrap:wrap; max-width:100%}
+.eng-head .spacer{flex:1}
+.grid{display:grid; grid-template-columns:340px 1fr; gap:26px; align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.rail{position:sticky; top:82px; display:flex; flex-direction:column; gap:18px}
+@media (max-width:900px){.rail{position:static}}
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow-sm)}
+.panel .ph{padding:15px 18px 0; display:flex; align-items:center; gap:8px}
+.panel .ph h3{font-size:15px} .panel .ph .spacer{flex:1}
+.panel .pb{padding:16px 18px}
+
+.docs{display:flex; flex-direction:column; gap:2px}
+.docrow{display:flex; align-items:center; gap:10px; padding:8px 6px; border-radius:8px; cursor:pointer; transition:background .15s}
+.docrow:hover{background:var(--surface-2)}
+.docrow .cb{width:20px; height:20px; flex:none; border-radius:6px; border:1.5px solid var(--line-2); display:grid; place-items:center; color:var(--on-accent); transition:background .15s,border-color .15s}
+.docrow.on .cb{background:var(--ok); border-color:var(--ok)}
+.docrow .cb svg{width:13px; height:13px; opacity:0} .docrow.on .cb svg{opacity:1}
+.docrow span{font-size:13px; color:var(--ink)}
+
+.stages{display:flex; flex-direction:column; gap:0}
+.stg{display:flex; align-items:center; gap:11px; padding:7px 4px; position:relative}
+.stg .node{width:22px; height:22px; flex:none; border-radius:50%; border:2px solid var(--line-2); background:var(--surface); display:grid; place-items:center; color:var(--on-accent); z-index:1}
+.stg .node svg{width:12px; height:12px; opacity:0}
+.stg.done .node{background:var(--ok); border-color:var(--ok)} .stg.done .node svg{opacity:1}
+.stg.current .node{border-color:var(--accent); background:var(--accent)} .stg.current .node::after{content:""; width:7px; height:7px; border-radius:50%; background:var(--on-accent)}
+.stg:not(:last-child)::before{content:""; position:absolute; left:14px; top:26px; width:2px; height:20px; background:var(--line-2)}
+.stg.done:not(:last-child)::before{background:var(--ok)}
+.stg .sl{font-size:13px; color:var(--ink-2); flex:1}
+.stg.current .sl{color:var(--ink); font-weight:600}
+.stg .adv{opacity:0; transition:opacity .15s}
+.stg:hover .adv{opacity:1}
+
+.stats{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border-radius:var(--r); overflow:hidden; border:1px solid var(--line)}
+.stat{background:var(--surface); padding:13px 15px}
+.stat .v{font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.02em; line-height:1.1}
+.stat .v.money{color:var(--ok)}
+.stat .k{font-size:11.5px; color:var(--ink-3); margin-top:2px}
+.hist{display:flex; flex-direction:column; gap:8px}
+.hist .h{display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-2)}
+.hist .h svg{width:14px; height:14px; color:var(--ok); flex:none}
+.hist .none{font-size:12.5px; color:var(--ink-3)}
+
+.intake-box textarea{min-height:88px}
+.reply{margin-top:12px; background:var(--accent-soft); border:1px solid color-mix(in srgb,var(--accent) 22%,transparent); border-radius:var(--r); padding:12px 14px; font-size:13.5px; color:var(--ink)}
+.reply .rl{font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--accent); margin-bottom:4px}
+.routed{margin-top:10px; display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--flag)}
+.routed svg{width:15px; height:15px; flex:none}
+
+.record{display:flex; flex-direction:column; gap:2px}
+.frow{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; transition:background .15s}
+.frow:hover{background:var(--surface-2)}
+.frow .fk{font-size:12px; color:var(--ink-3); width:130px; flex:none}
+@media (max-width:520px){.frow .fk{width:100px}}
+.frow .fv{flex:1; min-width:0; font-size:13.5px; color:var(--ink); word-break:break-word}
+.frow .fv.empty{color:var(--ink-3); font-style:italic}
+.frow .resolve{border:1px solid var(--line-2); background:var(--surface); color:var(--flag); font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:8px; flex:none}
+.frow .resolve:hover{border-color:var(--flag)}
+.frow input.fedit{flex:1; height:34px; padding:0 10px; border:1px solid var(--accent); border-radius:8px; background:var(--surface); box-shadow:0 0 0 3px var(--accent-soft)}
+
+.convo{display:flex; flex-direction:column; gap:10px; margin-top:6px}
+.turn{font-size:13px; line-height:1.5}
+.turn .who{font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-3)}
+.turn.home .body{background:var(--surface-2); border-radius:10px 10px 10px 3px; padding:9px 12px; margin-top:3px}
+.turn.us .body{background:var(--accent-soft); border-radius:10px 10px 3px 10px; padding:9px 12px; margin-top:3px; color:var(--ink)}
+
+.toasts{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:80; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none}
+.toast{display:flex; align-items:center; gap:9px; background:var(--ink); color:var(--paper); padding:11px 16px; border-radius:11px; box-shadow:var(--shadow-lg); font-size:13.5px; font-weight:500; animation:tin .28s cubic-bezier(.2,.9,.3,1); max-width:90vw}
+.toast svg{width:16px; height:16px; flex:none}
+.toast.ok svg{color:var(--ok)} .toast.err svg{color:var(--danger)}
+@keyframes tin{from{opacity:0; transform:translateY(10px)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms!important; transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand" id="brand" role="button" tabindex="0" aria-label="Home">
+    <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h4l2 5 4-14 2 6h6"/></svg></span>
+    <span><span class="name">Permit Packet Assistant</span><span class="sub">One intake · every agency · you file</span></span>
+  </div>
+  <span class="spacer"></span>
+  <button class="btn ghost sm" id="exportBtn" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+    <span class="lbl">Export packet</span>
+  </button>
+  <button class="iconbtn" id="themeBtn" aria-label="Toggle color theme"><svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
+</header>
+<main id="app"></main>
+<div class="scrim" id="scrim" role="dialog" aria-modal="true"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STAGES=[['intake','Intake'],['assembling','Assembling'],['consultant_review','In review'],['submitted','Submitted'],['rai_received','RAI received'],['approved','Approved']];
+const STAGE_CHIP={intake:'neutral',assembling:'active',consultant_review:'flag',submitted:'active',rai_received:'flag',approved:'ok'};
+const state={proj:null,list:[],stats:{},filter:'all',query:'',reply:'',routed:false,editing:null};
+function relTime(iso){ if(!iso)return '—'; const d=(Date.now()-new Date(iso))/1000;
+  if(d<60)return 'just now'; if(d<3600)return Math.floor(d/60)+'m ago'; if(d<86400)return Math.floor(d/3600)+'h ago';
+  if(d<604800)return Math.floor(d/86400)+'d ago'; return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+const H=()=>{ const t=localStorage.getItem('ppa-token'); return t?{'X-Consultant-Token':t}:{}; };
+
+const root=document.documentElement; const saved=localStorage.getItem('ppa-theme'); if(saved)root.setAttribute('data-theme',saved);
+function isDark(){ return getComputedStyle(root).getPropertyValue('--paper').trim().toLowerCase().startsWith('#16'); }
+function syncTheme(){ $('#themeIcon').innerHTML=isDark()?'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>':'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'; }
+$('#themeBtn').onclick=()=>{ const n=isDark()?'light':'dark'; root.setAttribute('data-theme',n); localStorage.setItem('ppa-theme',n); syncTheme(); };
+syncTheme(); $('#brand').onclick=()=>location.hash='#/'; $('#brand').onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();location.hash='#/';} };
+
+function toast(msg,kind='ok'){ const t=document.createElement('div'); t.className='toast '+kind;
+  const ic=kind==='err'?'<path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>':'<path d="M20 6 9 17l-5-5"/>';
+  t.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ic}</svg>${esc(msg)}`;
+  $('#toasts').appendChild(t); setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),320);},3200); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeModal(); });
+
+async function route(){ const h=location.hash.replace(/^#\/?/,''); if(h)await openDetail(h); else await renderHome(); }
+window.addEventListener('hashchange',route);
+
+async function renderHome(){
+  $('#exportBtn').style.display='none'; state.proj=null;
+  try{ [state.list,state.stats]=await Promise.all([fetch('/projects').then(r=>r.json()),fetch('/rollup').then(r=>r.json())]); }catch(_){ state.list=[]; state.stats={}; }
+  const s=state.stats||{}, L=state.list||[];
+  const active=L.filter(p=>p.stage!=='approved').length, approved=L.filter(p=>p.stage==='approved').length;
+  $('#app').innerHTML=`<div class="wrap">
+    <div class="page-head"><h1>Projects</h1><span class="spacer"></span>
+      <button class="btn primary" id="newBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>New project</button></div>
+    <div class="dash">
+      <div class="dcard"><div class="v">${active}</div><div class="k">In progress</div></div>
+      <div class="dcard"><div class="v">${approved}</div><div class="k">Approved</div></div>
+      <div class="dcard"><div class="v money">${Math.round(s.rekey_minutes_avoided||0)}</div><div class="k">Re-key minutes avoided</div></div>
+      <div class="dcard"><div class="v">${s.packets_exported??0}</div><div class="k">Packets exported</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input class="input" id="q" placeholder="Search by owner or address" value="${esc(state.query)}"></div>
+      <div class="seg">${['all','active','approved'].map(f=>`<button data-f="${f}" class="${state.filter===f?'on':''}">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}</div>
+    </div>
+    <div class="projects" id="projects"></div></div>`;
+  $('#newBtn').onclick=openModal;
+  $('#q').oninput=e=>{ state.query=e.target.value; renderList(); };
+  $('#app').querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{ state.filter=b.dataset.f; renderHome(); });
+  renderList();
+}
+function renderList(){
+  const el=$('#projects'); if(!el)return;
+  let rows=state.list.filter(p=>state.filter==='all'||(state.filter==='approved'?p.stage==='approved':p.stage!=='approved'));
+  if(state.query.trim()){ const q=state.query.toLowerCase(); rows=rows.filter(p=>(p.owner_name||'').toLowerCase().includes(q)||(p.site_address||'').toLowerCase().includes(q)); }
+  if(!rows.length){ el.innerHTML=`<div class="emptybox"><div class="ei"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></div><b>${state.list.length?'No matching projects':'No projects yet'}</b>${state.list.length?'Try a different search or filter.':'Create your first permit project.'}</div>`; return; }
+  el.innerHTML=rows.map(p=>{
+    const label=STAGES.find(s=>s[0]===p.stage)?.[1]||p.stage;
+    const pct=p.docs_total?Math.round(p.docs_received/p.docs_total*100):0;
+    const flag=p.needs_review_count?`<span class="chip flag">${p.needs_review_count} to review</span>`:'';
+    return `<button class="prow" data-pid="${p.id}">
+      <span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></span>
+      <span class="pmain"><span class="ptitle">${esc(p.owner_name||'New intake')}</span>
+        <span class="pmeta"><span class="chip ${STAGE_CHIP[p.stage]||'neutral'} sdot">${esc(label)}</span>${p.site_address?`<span>${esc(p.site_address)}</span>`:''}${flag}<span>· updated ${relTime(p.updated)}</span></span></span>
+      <span class="prog"><span class="num" style="font-size:12.5px;color:var(--ink-3)">${p.docs_received}/${p.docs_total} docs</span><span class="bar"><i style="width:${pct}%"></i></span></span>
+      <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span></button>`;
+  }).join('');
+  el.querySelectorAll('.prow').forEach(r=>r.onclick=()=>location.hash='#/'+r.dataset.pid);
+}
+
+let lastFocus=null;
+function openModal(){
+  lastFocus=document.activeElement;
+  $('#scrim').innerHTML=`<div class="modal"><h2>New permit project</h2><p class="mlede">One dock/seawall job. Add the homeowner's phone if you want SMS updates to reach them.</p>
+    <form id="cf"><div class="field"><label for="cn">Consultant name</label><input class="input" id="cn" value="Kannishk" required></div>
+    <div class="field"><label for="ph">Homeowner phone (optional)</label><input class="input" id="ph" type="tel" placeholder="+1 831 555 0100" autocomplete="off"></div>
+    <div class="mact"><button type="button" class="btn ghost" id="cx">Cancel</button><button type="submit" class="btn primary">Create</button></div></form></div>`;
+  $('#scrim').classList.add('show'); $('#cx').onclick=closeModal;
+  $('#scrim').onclick=e=>{ if(e.target.id==='scrim')closeModal(); };
+  $('#cf').onsubmit=async e=>{ e.preventDefault(); const b=e.submitter; b.disabled=true;
+    try{ const j=await(await fetch('/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consultant_name:$('#cn').value,owner_phone:$('#ph').value})})).json();
+      closeModal(); toast('Project created'); location.hash='#/'+j.id;
+    }catch(_){ b.disabled=false; toast('Could not create project','err'); } };
+  setTimeout(()=>$('#cn')&&$('#cn').focus(),40);
+}
+function closeModal(){ const s=$('#scrim'); if(!s.classList.contains('show'))return; s.classList.remove('show'); s.innerHTML=''; if(lastFocus)lastFocus.focus(); }
+
+async function openDetail(pid){
+  const r=await fetch('/projects/'+pid);
+  if(!r.ok){ toast('Project not found','err'); location.hash='#/'; return; }
+  state.proj=await r.json(); state.reply=''; state.routed=false; state.editing=null;
+  await refreshStats(); renderDetail();
+}
+async function refresh(){ const r=await fetch('/projects/'+state.proj.id); state.proj=await r.json(); renderRecord(); renderDocs(); renderStages(); renderConvo(); await refreshStats(); }
+async function refreshStats(){ try{ state.stats=await(await fetch('/rollup')).json(); }catch(_){ state.stats={}; } renderStats(); }
+
+function renderDetail(){
+  const p=state.proj; $('#exportBtn').style.display='';
+  const label=STAGES.find(s=>s[0]===p.stage)?.[1]||p.stage;
+  const title=p.fields.owner_name||'New intake';
+  $('#app').innerHTML=`<div class="wrap">
+    <div class="crumb"><button id="backBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Projects</button><span>/</span><span>${esc(title)}</span></div>
+    <div class="eng-head"><div><h2>${esc(title)}</h2>
+      <div class="hmeta"><span class="chip ${STAGE_CHIP[p.stage]||'neutral'} sdot">${esc(label)}</span>
+        ${p.fields.site_address?`<span style="font-size:12.5px;color:var(--ink-3)">${esc(p.fields.site_address)}</span>`:''}
+        <span style="font-size:12px;color:var(--ink-3)">Consultant ${esc(p.consultant_name)}</span></div></div>
+      <span class="spacer"></span></div>
+    <div class="grid">
+      <aside class="rail">
+        <div class="panel"><div class="ph"><h3>Document checklist</h3></div><div class="pb"><div class="docs" id="docs"></div>
+          <button class="btn ghost sm" id="remindBtn" style="width:100%;margin-top:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>Send doc reminder</button></div></div>
+        <div class="panel"><div class="ph"><h3>Status</h3></div><div class="pb"><div class="stages" id="stages"></div></div></div>
+        <div class="panel"><div class="ph"><h3>Pilot scoreboard</h3></div><div class="pb"><div class="stats" id="stats"></div></div></div>
+        <div class="panel"><div class="ph"><h3>Delivered packets</h3></div><div class="pb"><div class="hist" id="hist"></div></div></div>
+      </aside>
+      <section>
+        <div class="panel intake-box" style="margin-bottom:16px"><div class="ph"><h3>Homeowner intake</h3><span class="spacer"></span><span class="hint" style="font-size:12px;color:var(--ink-3)">paste their message</span></div>
+          <div class="pb"><textarea class="input" id="msg" placeholder="Paste the homeowner's message or email…"></textarea>
+            <button class="btn primary sm" id="runBtn" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Run intake</button>
+            <div id="replyBox"></div></div></div>
+        <div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Project record</h3><span class="spacer"></span><span class="hint" style="font-size:12px;color:var(--ink-3)">flagged fields need your review</span></div><div class="pb"><div class="record" id="record"></div></div></div>
+        <div class="panel"><div class="ph"><h3>Conversation</h3></div><div class="pb"><div class="convo" id="convo"></div></div></div>
+      </section></div></div>`;
+  $('#backBtn').onclick=()=>location.hash='#/';
+  $('#exportBtn').onclick=doExport;
+  $('#runBtn').onclick=runIntake;
+  $('#remindBtn').onclick=sendReminder;
+  renderDocs(); renderStages(); renderStats(); renderHist(); renderRecord(); renderConvo(); renderReply();
+}
+function renderReply(){
+  const el=$('#replyBox'); if(!el)return;
+  el.innerHTML=(state.reply?`<div class="reply"><div class="rl">Reply to homeowner</div>${esc(state.reply)}</div>`:'')
+   +(state.routed?`<div class="routed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>An advice/fee question was routed to you — the assistant never answers those.</div>`:'');
+}
+function renderDocs(){
+  const el=$('#docs'); if(!el)return; const docs=state.proj.docs||{};
+  el.innerHTML=Object.entries(docs).map(([d,got])=>`<div class="docrow ${got?'on':''}" data-doc="${esc(d)}"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span>${esc(d)}</span></div>`).join('');
+  el.querySelectorAll('.docrow').forEach(r=>r.onclick=()=>toggleDoc(r.dataset.doc,!state.proj.docs[r.dataset.doc]));
+}
+async function toggleDoc(doc,received){
+  const r=await fetch(`/projects/${state.proj.id}/docs`,{method:'POST',headers:{'Content-Type':'application/json',...H()},body:JSON.stringify({doc,received})});
+  if(!r.ok){ toast((await r.json().catch(()=>({}))).detail||'Update failed','err'); return; } await refresh();
+}
+async function sendReminder(){
+  const r=await fetch(`/projects/${state.proj.id}/remind`,{method:'POST',headers:H()});
+  const j=await r.json().catch(()=>({})); if(!r.ok){ toast(j.detail||'Failed','err'); return; }
+  toast(j.sent?(j.delivered===false?'Reminder logged (SMS failed)':'Reminder sent'):'No missing documents');
+}
+function renderStages(){
+  const el=$('#stages'); if(!el)return; const cur=STAGES.findIndex(s=>s[0]===state.proj.stage);
+  el.innerHTML=STAGES.map((s,i)=>{ const cls=i<cur?'done':(i===cur?'current':'');
+    return `<div class="stg ${cls}"><span class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="sl">${s[1]}</span>${i===cur+1?`<button class="resolve adv" data-stg="${s[0]}">Advance →</button>`:''}</div>`; }).join('');
+  el.querySelectorAll('.adv').forEach(b=>b.onclick=()=>setStage(b.dataset.stg));
+}
+async function setStage(stage){
+  const r=await fetch(`/projects/${state.proj.id}/stage`,{method:'POST',headers:{'Content-Type':'application/json',...H()},body:JSON.stringify({stage})});
+  if(!r.ok){ toast((await r.json().catch(()=>({}))).detail||'Failed','err'); return; }
+  toast('Stage advanced — homeowner notified'); await refresh();
+}
+function renderStats(){
+  const el=$('#stats'); if(!el)return; const s=state.stats||{};
+  const cells=[['Fields auto-filled',s.fields_autofilled??0,''],['Re-key min avoided',Math.round(s.rekey_minutes_avoided||0),'money'],['Advice routed',s.advice_questions_routed_to_consultant??0,''],['Packets',s.packets_exported??0,'']];
+  el.innerHTML=cells.map(([k,v,c])=>`<div class="stat"><div class="v ${c}">${esc(v)}</div><div class="k">${k}</div></div>`).join('');
+}
+function renderHist(){
+  const el=$('#hist'); if(!el)return; const ex=state.proj.exports||[];
+  el.innerHTML=ex.length?ex.slice().reverse().map(x=>`<div class="h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Packet exported · ${new Date(x.ts).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div>`).join(''):`<div class="none">No packets exported yet. Capture intake, then export.</div>`;
+}
+function renderRecord(){
+  const el=$('#record'); if(!el)return; const p=state.proj; const keys=Object.keys(p.fields);
+  if(!keys.length){ el.innerHTML=`<div style="font-size:13px;color:var(--ink-3);padding:6px 10px">No fields captured yet. Run an intake message above.</div>`; return; }
+  el.innerHTML=keys.map(k=>{
+    const flagged=p.needs_review.includes(k), v=p.fields[k];
+    if(state.editing===k) return `<div class="frow"><span class="fk">${esc(k)}</span><input class="fedit" id="ed" value="${esc(v??'')}" placeholder="corrected value"><button class="resolve" onclick="saveResolve('${k}')">Save</button></div>`;
+    return `<div class="frow"><span class="fk">${esc(k)}</span><span class="fv ${v==null||v===''?'empty':''}">${v==null||v===''?'—':esc(v)}</span>${flagged?`<button class="resolve" onclick="editField('${k}')">Review</button>`:''}</div>`;
+  }).join('');
+  const ed=$('#ed'); if(ed){ ed.focus(); ed.onkeydown=e=>{ if(e.key==='Enter')saveResolve(state.editing); if(e.key==='Escape'){state.editing=null;renderRecord();} }; }
+}
+function editField(k){ state.editing=k; renderRecord(); }
+async function saveResolve(k){
+  const v=$('#ed')?$('#ed').value:''; state.editing=null;
+  const r=await fetch(`/projects/${state.proj.id}/review/${k}`,{method:'POST',headers:{'Content-Type':'application/json',...H()},body:JSON.stringify({value:v})});
+  if(!r.ok){ toast((await r.json().catch(()=>({}))).detail||'Invalid value','err'); renderRecord(); return; }
+  toast('Field resolved'); await refresh();
+}
+function renderConvo(){
+  const el=$('#convo'); if(!el)return; const log=state.proj.intake_log||[];
+  if(!log.length){ el.innerHTML=`<div style="font-size:13px;color:var(--ink-3)">No intake yet.</div>`; return; }
+  el.innerHTML=log.map(t=>`<div class="turn home"><div class="who">Homeowner</div><div class="body">${esc(t.homeowner)}</div></div>${t.reply?`<div class="turn us"><div class="who">Assistant</div><div class="body">${esc(t.reply)}</div></div>`:''}`).join('');
+}
+async function runIntake(){
+  const t=$('#msg').value.trim(); if(!t){ toast('Paste a message first','err'); return; }
+  const btn=$('#runBtn'); btn.disabled=true; btn.innerHTML='<span style="width:15px;height:15px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin .7s linear infinite"></span> Reading…';
+  try{
+    const r=await fetch(`/projects/${state.proj.id}/intake`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+    const j=await r.json(); if(!r.ok) throw new Error(j.detail||'intake failed');
+    state.reply=j.reply_text||''; $('#msg').value='';
+    await refresh(); renderReply();
+    // routed detection: re-read last log turn
+    const last=(state.proj.intake_log||[]).slice(-1)[0]; state.routed=last&&last.routed_question; renderReply();
+    toast('Intake processed');
+  }catch(err){ toast(err.message||'Intake failed','err'); }
+  finally{ const b=$('#runBtn'); if(b){ b.disabled=false; b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Run intake'; } }
+}
+async function doExport(){
+  try{ const r=await fetch(`/projects/${state.proj.id}/packet.docx`);
+    if(!r.ok){ toast((await r.json().catch(()=>({}))).detail||'Capture intake first','err'); return; }
+    const blob=await r.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a');
+    a.href=url; a.download=`${state.proj.fields.owner_name||'permit'}-packet.docx`; a.click(); URL.revokeObjectURL(url);
+    toast('Draft packet exported'); await refresh();
+  }catch(_){ toast('Export failed','err'); }
+}
+route();
+</script>
+</body>
+</html>

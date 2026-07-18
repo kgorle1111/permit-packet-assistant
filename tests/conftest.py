@@ -20,6 +20,7 @@ from app import packet, receipt, store  # noqa: E402
 def isolate_files(tmp_path, monkeypatch):
     monkeypatch.setattr(store, "LOG", tmp_path / "projects.jsonl")
     monkeypatch.setattr(store, "MESSAGES", tmp_path / "messages.jsonl")
+    monkeypatch.setattr(store, "DATA", tmp_path / "data")
     monkeypatch.setattr(store, "_PROJECTS", {})
     monkeypatch.setattr(receipt, "LOG", tmp_path / "receipts.jsonl")
     monkeypatch.setattr(packet, "PACKETS", tmp_path / "packets")

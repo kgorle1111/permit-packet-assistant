@@ -5,6 +5,7 @@
 projects.jsonl
 messages.jsonl
 receipts.jsonl
+data/
 packets/
 evals/results/
 

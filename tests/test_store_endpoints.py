@@ -60,6 +60,49 @@ class TestStoreRules:
         assert store.send_reminder(p["id"]) is None
 
 
+class TestProjectTracking:
+    def test_list_sorted_by_activity(self):
+        a = store.create_project("A")
+        store.create_project("B")
+        store.set_stage(a["id"], "assembling")  # touches A -> most recent
+        listed = store.list_projects()
+        assert listed[0]["id"] == a["id"] and listed[0]["stage"] == "assembling"
+
+    def test_summary_fields(self):
+        p = store.create_project("K", "+1555")
+        store.merge_intake(p["id"], {"fields": {"owner_name": "Pat"}, "needs_review": ["parcel_apn"],
+                                     "confidence": {}, "reply_text": "ok"}, "hi")
+        store.set_doc(p["id"], "photos", True)
+        s = store.summarize(p)
+        assert s["owner_name"] == "Pat" and s["needs_review_count"] == 1
+        assert s["docs_received"] == 1 and s["docs_total"] == 4
+
+    def test_persistence_survives_reload(self, isolate_files):
+        p = store.create_project("Persisted")
+        store.merge_intake(p["id"], {"fields": {"owner_name": "Pat"}, "needs_review": [],
+                                     "confidence": {}, "reply_text": "ok"}, "hi")
+        assert (isolate_files / "data" / f"{p['id']}.json").exists()
+        store._PROJECTS.clear()
+        assert store.load_all() == 1
+        assert store.get_project(p["id"])["fields"]["owner_name"] == "Pat"
+
+    def test_export_history_recorded(self):
+        p = store.create_project("K")
+        store.record_packet_export(p["id"])
+        assert store.summarize(p)["export_count"] == 1
+
+
+class TestUI:
+    def test_index_serves_html_shell(self):
+        r = client.get("/")
+        assert r.status_code == 200 and "Permit Packet Assistant" in r.text
+
+    def test_list_endpoint(self):
+        _project()
+        rows = client.get("/projects").json()
+        assert len(rows) >= 1 and "stage" in rows[0]
+
+
 class TestReceipt:
     def test_rollup_math(self):
         receipt.log_event("P", "intake_turn", routed_questions=1)
