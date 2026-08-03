@@ -20,12 +20,13 @@ Trust boundaries
       message is never dropped.
 """
 import os
+from urllib.parse import urlsplit
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from app import intake, packet, receipt, store
@@ -42,6 +43,34 @@ async def lifespan(_app):
 
 
 app = FastAPI(title="permit-packet-assistant", lifespan=lifespan)
+
+# --- localhost guard -------------------------------------------------------
+# Rejects requests whose Host or Origin isn't local. The Host check stops DNS
+# rebinding (evil.com resolving to 127.0.0.1 arrives with Host: evil.com); the
+# Origin check stops cross-origin browser POSTs — multipart/form bodies skip
+# CORS preflight, so without it any webpage the operator visits could fire
+# uploads that spend real API money. curl/httpx send no Origin and pass.
+# "testserver" is starlette's TestClient default host.
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "testserver"}
+
+
+def _guard_hostname(value: str) -> str:
+    if "//" not in value:
+        value = "//" + value
+    return urlsplit(value).hostname or ""
+
+
+@app.middleware("http")
+async def localhost_guard(request: Request, call_next):
+    if _guard_hostname(request.headers.get("host", "")) not in _LOCAL_HOSTS:
+        return JSONResponse(
+            {"detail": "unrecognized Host header — this server only answers as localhost"}, status_code=403
+        )
+    origin = request.headers.get("origin")
+    if origin and _guard_hostname(origin) not in _LOCAL_HOSTS:
+        return JSONResponse({"detail": "cross-origin requests are not accepted"}, status_code=403)
+    return await call_next(request)
+
 
 
 def _consultant_only(token: str | None):
