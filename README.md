@@ -114,6 +114,13 @@ pytest                     # offline: the judgment guard, validators, fill path,
 python evals/run_evals.py  # live: advice questions must route, injection must not leak
 ```
 
+**Not tested automatically, by choice:** fidelity to real agency forms (v1
+templates are generic until the pilot county's forms are wired in — there is
+nothing real to assert against yet), live Twilio SMS delivery (without
+credentials every message persists to `messages.jsonl`, which is what tests
+pin), and the browser UI flow (by hand before a demo). The guards, validators,
+and templated-message pinning are all automated.
+
 ## Honest limits — read before piloting
 
 - **The AI never fills a form.** It extracts into a validated record; plain
