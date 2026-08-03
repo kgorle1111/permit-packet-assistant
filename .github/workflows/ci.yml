@@ -1,0 +1,42 @@
+# CI — hermetic only, no secrets needed. LLM evals are deliberately NOT here:
+# they hit the live API and cost real money. Run evals locally after any
+# prompt or model change instead.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          uv venv --clear
+          uv pip install -r requirements-dev.txt
+      - name: Lint
+        run: .venv/bin/ruff check .
+      - name: Test
+        run: .venv/bin/pytest -q
+
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans full history
+      - uses: astral-sh/setup-uv@v5
+      - name: Audit dependencies
+        run: uvx pip-audit -r requirements.txt
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # auto-provided
