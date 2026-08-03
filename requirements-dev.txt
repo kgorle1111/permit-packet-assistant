@@ -1,4 +1,4 @@
 -r requirements.txt
 pytest
 httpx
-ruff
+ruff==0.15.22      # kn: pinned so CI lints with the same ruleset as local — bump deliberately
