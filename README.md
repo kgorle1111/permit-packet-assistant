@@ -113,3 +113,24 @@ evals/        live probes: extraction accuracy, advice routing, injection, one-q
 pytest                     # offline: the judgment guard, validators, fill path, message pinning
 python evals/run_evals.py  # live: advice questions must route, injection must not leak
 ```
+
+## Honest limits — read before piloting
+
+- **The AI never fills a form.** It extracts into a validated record; plain
+  code maps that record onto agency templates. Cost: each new agency form
+  needs a hand-written mapping (~1 hour). That hour is the safety mechanism —
+  extraction errors get caught at one choke point instead of scattering
+  across every form.
+- **Homeowners only ever receive pre-approved text.** Status messages are
+  byte-identical to consultant-written strings (a test pins this). The AI
+  will never tell a stressed homeowner something untrue about a government
+  process, because it physically can't compose the message.
+- **Permit-advice questions get routed to you, not answered.** "Do I need a
+  permit / is this exempt / what does it cost" pattern-matches to a handoff.
+  Expect some over-routing — a question you'd have been fine with it
+  deflecting lands on your desk instead. That's the correct failure direction.
+- **A restart drops in-progress working state.** The audit log and message
+  log survive; the record rebuilds from review. SQLite lands at the first
+  multi-consultant pilot.
+
+Full engineering rationale for every cut: [TRADEOFFS.md](TRADEOFFS.md).
