@@ -8,6 +8,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from dotenv import load_dotenv  # noqa: E402
+
+load_dotenv()  # the key lives in .env — the eval is useless without it
+
 from app import intake  # noqa: E402
 
 RESULTS = Path(__file__).parent / "results"
